@@ -16,7 +16,7 @@ After the user is returned from the queue, the Worker script will let the user c
 *  Go to the added script select the Resources tab -> KV Namespaces click Add Binding and for VARIABLE NAME enter `IntegrationConfigKV` and for NAMESPACE you should be able to select `IntegrationConfigKV` which you had added before
 *  Add routes you need to be protected by Queue-it (e.g. PROTECTED.YOURDOMAIN.COM/*)
 *  Search for `QUEUEIT_CUSTOMERID` and `QUEUEIT_SECRETKEY` in `queueitknownuser.bundle.js` replace their values with your customerId and secretKey found in Go Queue-It self-service platform (I have done it for you in the attached file, so it is not needed here)
-*  Setup the Publish web endpoint (e.g. PROTECTED.YOURDOMAIN.COM/?_push_queueit_config)  in Integration -> Overview -> Settings 
+*  Setup the Publish web endpoint (e.g. [PROTECTED ROUTE]/?__push_queueit_config)  in Integration -> Overview -> Settings 
 *  Setup Trigger and Action in Go Queue-it and once ready click Integration -> Overview -> Show/Hide Instructions and click the Push Now button
 >Please contact [queue-it support](https://support.queue-it.com/hc/en-us) for further information and instructions.
  
