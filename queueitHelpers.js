@@ -1,7 +1,7 @@
 
 const QueueIT = require("./sdk/queueit-knownuserv3-sdk.js");
 const crypto = require('js-sha256');
-const CLOUDFLARE_SDK_VERSION = "1.0.0";
+const CLOUDFLARE_SDK_VERSION = "1.0.1";
 exports.getParameterByName = function( url, name) {
     if (!url) url = window.location.href;
     name = name.replace(/[\[\]]/g, '\\$&');

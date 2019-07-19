@@ -259,19 +259,23 @@ addEventListener('fetch', event => {
           response = await fetch(request);
         }
       }
+
+      if(httpProvider.outputCookie)
+      {
+          response = new Response(response.body, response);
+          response.headers.append("Set-Cookie",httpProvider.outputCookie);
+      }
     }
     catch (e) {
       // There was an error validationg the request
       // Use your own logging framework to log the Exception
-      // This was a configuration exception, so we let the user continue
-      console.log("ERROR:" + e);
+     if(console && console.log)
+     {
+        console.log("ERROR:" + e);
+     }
       response = await fetch(request);
     }
-    if(httpProvider.outputCookie)
-    {
-        response = new Response(response.body, response);
-        response.headers.set("Set-Cookie",httpProvider.outputCookie);
-    }
+
     return response;
 
   }
@@ -892,7 +896,7 @@ exports.getIntegrationConfig = async function(integrationConfigKV)
 
 const QueueIT = require("./sdk/queueit-knownuserv3-sdk.js");
 const crypto = require('js-sha256');
-const CLOUDFLARE_SDK_VERSION = "1.0.0";
+const CLOUDFLARE_SDK_VERSION = "1.0.1";
 exports.getParameterByName = function( url, name) {
     if (!url) url = window.location.href;
     name = name.replace(/[\[\]]/g, '\\$&');

@@ -71,19 +71,23 @@ addEventListener('fetch', event => {
           response = await fetch(request);
         }
       }
+
+      if(httpProvider.outputCookie)
+      {
+          response = new Response(response.body, response);
+          response.headers.append("Set-Cookie",httpProvider.outputCookie);
+      }
     }
     catch (e) {
       // There was an error validationg the request
       // Use your own logging framework to log the Exception
-      // This was a configuration exception, so we let the user continue
-      console.log("ERROR:" + e);
+     if(console && console.log)
+     {
+        console.log("ERROR:" + e);
+     }
       response = await fetch(request);
     }
-    if(httpProvider.outputCookie)
-    {
-        response = new Response(response.body, response);
-        response.headers.set("Set-Cookie",httpProvider.outputCookie);
-    }
+
     return response;
 
   }
