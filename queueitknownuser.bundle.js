@@ -305,7 +305,7 @@ exports.getHttpHandler = function(request, bodyString)
                     }
                     return decodeURIComponent(this.parsedCookieDic[cookieKey]);
                 },
-                getBodyAsString:function()
+                getRequestBodyAsString:function()
                 {
                     return bodyString;
                 },
