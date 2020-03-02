@@ -1,5 +1,5 @@
 const QUEUEIT_CUSTOMERID = "YOUR CUSTOMERID"; 
-const QUEUEIT_SECRETKEY = "YOUR SERCRET KEY";
+const QUEUEIT_SECRETKEY = "YOUR SECRET KEY";
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
@@ -305,7 +305,7 @@ exports.getHttpHandler = function(request, bodyString)
                     }
                     return decodeURIComponent(this.parsedCookieDic[cookieKey]);
                 },
-                getRequestBodyAsString:function()
+                getBodyAsString:function()
                 {
                     return bodyString;
                 },
@@ -896,7 +896,7 @@ exports.getIntegrationConfig = async function(integrationConfigKV)
 
 const QueueIT = require("./sdk/queueit-knownuserv3-sdk.js");
 const crypto = require('js-sha256');
-const CLOUDFLARE_SDK_VERSION = "1.0.1";
+const CLOUDFLARE_SDK_VERSION = "1.1.0";
 exports.getParameterByName = function( url, name) {
     if (!url) url = window.location.href;
     name = name.replace(/[\[\]]/g, '\\$&');
@@ -997,12 +997,6 @@ var QueueIT;
                     debugEntries["RequestHttpHeader_XForwardedHost"] = httpContextProvider.getHttpRequest().getHeader("X-Forwarded-Host");
                     debugEntries["RequestHttpHeader_XForwardedProto"] = httpContextProvider.getHttpRequest().getHeader("X-Forwarded-Proto");
                 };
-                KnownUser.getIsDebug = function (queueitToken, secretKey) {
-                    var qParams = SDK.QueueParameterHelper.extractQueueParams(queueitToken);
-                    if (qParams && qParams.redirectType && qParams.redirectType.toLowerCase() === "debug")
-                        return SDK.Utils.generateSHA256Hash(secretKey, qParams.queueITTokenWithoutHash) === qParams.hashCode;
-                    return false;
-                };
                 KnownUser.setDebugCookie = function (debugEntries, httpContextProvider) {
                     var cookieValue = "";
                     for (var key in debugEntries) {
@@ -1015,9 +1009,9 @@ var QueueIT;
                         return;
                     httpContextProvider.getHttpResponse().setCookie(this.QueueITDebugKey, cookieValue, null, SDK.Utils.getCurrentTime() + 20 * 60); // now + 20 mins
                 };
-                KnownUser._resolveQueueRequestByLocalConfig = function (targetUrl, queueitToken, queueConfig, customerId, secretKey, httpContextProvider, debugEntries) {
-                    var isDebug = this.getIsDebug(queueitToken, secretKey);
+                KnownUser._resolveQueueRequestByLocalConfig = function (targetUrl, queueitToken, queueConfig, customerId, secretKey, httpContextProvider, debugEntries, isDebug) {
                     if (isDebug) {
+                        debugEntries["SdkVersion"] = SDK.UserInQueueService.SDK_VERSION;
                         debugEntries["TargetUrl"] = targetUrl;
                         debugEntries["QueueitToken"] = queueitToken;
                         debugEntries["OriginalUrl"] = httpContextProvider.getHttpRequest().getAbsoluteUri();
@@ -1041,10 +1035,10 @@ var QueueIT;
                     result.isAjaxResult = this.isQueueAjaxCall(httpContextProvider);
                     return result;
                 };
-                KnownUser._cancelRequestByLocalConfig = function (targetUrl, queueitToken, cancelConfig, customerId, secretKey, httpContextProvider, debugEntries) {
+                KnownUser._cancelRequestByLocalConfig = function (targetUrl, queueitToken, cancelConfig, customerId, secretKey, httpContextProvider, debugEntries, isDebug) {
                     targetUrl = this.generateTargetUrl(targetUrl, httpContextProvider);
-                    var isDebug = this.getIsDebug(queueitToken, secretKey);
                     if (isDebug) {
+                        debugEntries["SdkVersion"] = SDK.UserInQueueService.SDK_VERSION;
                         debugEntries["TargetUrl"] = targetUrl;
                         debugEntries["QueueitToken"] = queueitToken;
                         debugEntries["CancelConfig"] = cancelConfig !== null ? cancelConfig.getString() : "NULL";
@@ -1068,7 +1062,7 @@ var QueueIT;
                     result.isAjaxResult = this.isQueueAjaxCall(httpContextProvider);
                     return result;
                 };
-                KnownUser.handleQueueAction = function (currentUrlWithoutQueueITToken, queueitToken, customerIntegrationInfo, customerId, secretKey, matchedConfig, httpContextProvider, debugEntries) {
+                KnownUser.handleQueueAction = function (currentUrlWithoutQueueITToken, queueitToken, customerIntegrationInfo, customerId, secretKey, matchedConfig, httpContextProvider, debugEntries, isDebug) {
                     var targetUrl = "";
                     switch (matchedConfig.RedirectLogic) {
                         case "ForcedTargetUrl":
@@ -1081,13 +1075,19 @@ var QueueIT;
                             targetUrl = this.generateTargetUrl(currentUrlWithoutQueueITToken, httpContextProvider);
                             break;
                     }
-                    var queueEventConfig = new SDK.QueueEventConfig(matchedConfig.EventId, matchedConfig.LayoutName, matchedConfig.Culture, matchedConfig.QueueDomain, matchedConfig.ExtendCookieValidity, matchedConfig.CookieValidityMinute, matchedConfig.CookieDomain, customerIntegrationInfo.Version);
-                    return this._resolveQueueRequestByLocalConfig(targetUrl, queueitToken, queueEventConfig, customerId, secretKey, httpContextProvider, debugEntries);
+                    var queueEventConfig = new SDK.QueueEventConfig(matchedConfig.EventId, matchedConfig.LayoutName, matchedConfig.Culture, matchedConfig.QueueDomain, matchedConfig.ExtendCookieValidity, matchedConfig.CookieValidityMinute, matchedConfig.CookieDomain, customerIntegrationInfo.Version, matchedConfig.Name);
+                    return this._resolveQueueRequestByLocalConfig(targetUrl, queueitToken, queueEventConfig, customerId, secretKey, httpContextProvider, debugEntries, isDebug);
                 };
-                KnownUser.handleCancelAction = function (currentUrlWithoutQueueITToken, queueitToken, customerIntegrationInfo, customerId, secretKey, matchedConfig, httpContextProvider, debugEntries) {
-                    var cancelEventConfig = new SDK.CancelEventConfig(matchedConfig.EventId, matchedConfig.QueueDomain, matchedConfig.CookieDomain, customerIntegrationInfo.Version);
+                KnownUser.handleCancelAction = function (currentUrlWithoutQueueITToken, queueitToken, customerIntegrationInfo, customerId, secretKey, matchedConfig, httpContextProvider, debugEntries, isDebug) {
+                    var cancelEventConfig = new SDK.CancelEventConfig(matchedConfig.EventId, matchedConfig.QueueDomain, matchedConfig.CookieDomain, customerIntegrationInfo.Version, matchedConfig.Name);
                     var targetUrl = this.generateTargetUrl(currentUrlWithoutQueueITToken, httpContextProvider);
-                    return this._cancelRequestByLocalConfig(targetUrl, queueitToken, cancelEventConfig, customerId, secretKey, httpContextProvider, debugEntries);
+                    return this._cancelRequestByLocalConfig(targetUrl, queueitToken, cancelEventConfig, customerId, secretKey, httpContextProvider, debugEntries, isDebug);
+                };
+                KnownUser.handleIgnoreAction = function (httpContextProvider, actionName) {
+                    var userInQueueService = this.getUserInQueueService(httpContextProvider);
+                    var result = userInQueueService.getIgnoreResult(actionName);
+                    result.isAjaxResult = this.isQueueAjaxCall(httpContextProvider);
+                    return result;
                 };
                 KnownUser.extendQueueCookie = function (eventId, cookieValidityMinute, cookieDomain, secretKey, httpContextProvider) {
                     if (!eventId)
@@ -1101,51 +1101,67 @@ var QueueIT;
                 };
                 KnownUser.resolveQueueRequestByLocalConfig = function (targetUrl, queueitToken, queueConfig, customerId, secretKey, httpContextProvider) {
                     var debugEntries = {};
+                    var connectorDiagnostics = SDK.ConnectorDiagnostics.verify(customerId, secretKey, queueitToken);
+                    if (connectorDiagnostics.hasError)
+                        return connectorDiagnostics.validationResult;
                     try {
                         targetUrl = this.generateTargetUrl(targetUrl, httpContextProvider);
-                        return this._resolveQueueRequestByLocalConfig(targetUrl, queueitToken, queueConfig, customerId, secretKey, httpContextProvider, debugEntries);
+                        return this._resolveQueueRequestByLocalConfig(targetUrl, queueitToken, queueConfig, customerId, secretKey, httpContextProvider, debugEntries, connectorDiagnostics.isEnabled);
+                    }
+                    catch (e) {
+                        if (connectorDiagnostics.isEnabled)
+                            debugEntries["Exception"] = e.message;
+                        throw e;
                     }
                     finally {
                         this.setDebugCookie(debugEntries, httpContextProvider);
                     }
                 };
                 KnownUser.validateRequestByIntegrationConfig = function (currentUrlWithoutQueueITToken, queueitToken, integrationsConfigString, customerId, secretKey, httpContextProvider) {
-                    if (!currentUrlWithoutQueueITToken)
-                        throw new SDK.KnownUserException("currentUrlWithoutQueueITToken can not be null or empty.");
-                    if (!integrationsConfigString)
-                        throw new SDK.KnownUserException("integrationsConfigString can not be null or empty.");
                     var debugEntries = {};
+                    var customerIntegrationInfo;
+                    var connectorDiagnostics = SDK.ConnectorDiagnostics.verify(customerId, secretKey, queueitToken);
+                    if (connectorDiagnostics.hasError)
+                        return connectorDiagnostics.validationResult;
                     try {
-                        var customerIntegrationInfo = JSON.parse(integrationsConfigString);
-                        var isDebug = this.getIsDebug(queueitToken, secretKey);
-                        if (isDebug) {
-                            debugEntries["ConfigVersion"] = customerIntegrationInfo.Version.toString();
+                        if (connectorDiagnostics.isEnabled) {
+                            debugEntries["SdkVersion"] = SDK.UserInQueueService.SDK_VERSION;
                             debugEntries["PureUrl"] = currentUrlWithoutQueueITToken;
                             debugEntries["QueueitToken"] = queueitToken;
                             debugEntries["OriginalUrl"] = httpContextProvider.getHttpRequest().getAbsoluteUri();
                             this.logExtraRequestDetails(debugEntries, httpContextProvider);
                         }
+                        customerIntegrationInfo = JSON.parse(integrationsConfigString);
+                        if (connectorDiagnostics.isEnabled) {
+                            debugEntries["ConfigVersion"] = customerIntegrationInfo && customerIntegrationInfo.Version ? customerIntegrationInfo.Version.toString() : "NULL";
+                        }
+                        if (!currentUrlWithoutQueueITToken)
+                            throw new SDK.KnownUserException("currentUrlWithoutQueueITToken can not be null or empty.");
+                        if (!customerIntegrationInfo || !customerIntegrationInfo.Version)
+                            throw new SDK.KnownUserException("integrationsConfigString can not be null or empty.");
                         var configEvaluater = new SDK.IntegrationConfig.IntegrationEvaluator();
                         var matchedConfig = configEvaluater.getMatchedIntegrationConfig(customerIntegrationInfo, currentUrlWithoutQueueITToken, httpContextProvider.getHttpRequest());
-                        if (isDebug) {
+                        if (connectorDiagnostics.isEnabled) {
                             debugEntries["MatchedConfig"] = matchedConfig ? matchedConfig.Name : "NULL";
                         }
                         if (!matchedConfig)
-                            return new SDK.RequestValidationResult(null, null, null, null, null);
+                            return new SDK.RequestValidationResult(null, null, null, null, null, null);
                         switch (matchedConfig.ActionType) {
                             case SDK.ActionTypes.QueueAction: {
-                                return this.handleQueueAction(currentUrlWithoutQueueITToken, queueitToken, customerIntegrationInfo, customerId, secretKey, matchedConfig, httpContextProvider, debugEntries);
+                                return this.handleQueueAction(currentUrlWithoutQueueITToken, queueitToken, customerIntegrationInfo, customerId, secretKey, matchedConfig, httpContextProvider, debugEntries, connectorDiagnostics.isEnabled);
                             }
                             case SDK.ActionTypes.CancelAction: {
-                                return this.handleCancelAction(currentUrlWithoutQueueITToken, queueitToken, customerIntegrationInfo, customerId, secretKey, matchedConfig, httpContextProvider, debugEntries);
+                                return this.handleCancelAction(currentUrlWithoutQueueITToken, queueitToken, customerIntegrationInfo, customerId, secretKey, matchedConfig, httpContextProvider, debugEntries, connectorDiagnostics.isEnabled);
                             }
                             default: {
-                                var userInQueueService = this.getUserInQueueService(httpContextProvider);
-                                var result = userInQueueService.getIgnoreActionResult();
-                                result.isAjaxResult = this.isQueueAjaxCall(httpContextProvider);
-                                return result;
+                                return this.handleIgnoreAction(httpContextProvider, matchedConfig.Name);
                             }
                         }
+                    }
+                    catch (e) {
+                        if (connectorDiagnostics.isEnabled)
+                            debugEntries["Exception"] = e.message;
+                        throw e;
                     }
                     finally {
                         this.setDebugCookie(debugEntries, httpContextProvider);
@@ -1153,8 +1169,16 @@ var QueueIT;
                 };
                 KnownUser.cancelRequestByLocalConfig = function (targetUrl, queueitToken, cancelConfig, customerId, secretKey, httpContextProvider) {
                     var debugEntries = {};
+                    var connectorDiagnostics = SDK.ConnectorDiagnostics.verify(customerId, secretKey, queueitToken);
+                    if (connectorDiagnostics.hasError)
+                        return connectorDiagnostics.validationResult;
                     try {
-                        return this._cancelRequestByLocalConfig(targetUrl, queueitToken, cancelConfig, customerId, secretKey, httpContextProvider, debugEntries);
+                        return this._cancelRequestByLocalConfig(targetUrl, queueitToken, cancelConfig, customerId, secretKey, httpContextProvider, debugEntries, connectorDiagnostics.isEnabled);
+                    }
+                    catch (e) {
+                        if (connectorDiagnostics.isEnabled)
+                            debugEntries["Exception"] = e.message;
+                        throw e;
                     }
                     finally {
                         this.setDebugCookie(debugEntries, httpContextProvider);
@@ -1177,7 +1201,8 @@ var QueueIT;
         var SDK;
         (function (SDK) {
             var QueueEventConfig = /** @class */ (function () {
-                function QueueEventConfig(eventId, layoutName, culture, queueDomain, extendCookieValidity, cookieValidityMinute, cookieDomain, version) {
+                function QueueEventConfig(eventId, layoutName, culture, queueDomain, extendCookieValidity, cookieValidityMinute, cookieDomain, version, actionName) {
+                    if (actionName === void 0) { actionName = 'unspecified'; }
                     this.eventId = eventId;
                     this.layoutName = layoutName;
                     this.culture = culture;
@@ -1186,9 +1211,10 @@ var QueueIT;
                     this.cookieValidityMinute = cookieValidityMinute;
                     this.cookieDomain = cookieDomain;
                     this.version = version;
+                    this.actionName = actionName;
                 }
                 QueueEventConfig.prototype.getString = function () {
-                    return "EventId:" + this.eventId + "&Version:" + this.version + "&QueueDomain:" + this.queueDomain +
+                    return "EventId:" + this.eventId + "&Version:" + this.version + "&ActionName:" + this.actionName + "&QueueDomain:" + this.queueDomain +
                         ("&CookieDomain:" + this.cookieDomain + "&ExtendCookieValidity:" + this.extendCookieValidity) +
                         ("&CookieValidityMinute:" + this.cookieValidityMinute + "&LayoutName:" + this.layoutName + "&Culture:" + this.culture);
                 };
@@ -1196,26 +1222,29 @@ var QueueIT;
             }());
             SDK.QueueEventConfig = QueueEventConfig;
             var CancelEventConfig = /** @class */ (function () {
-                function CancelEventConfig(eventId, queueDomain, cookieDomain, version) {
+                function CancelEventConfig(eventId, queueDomain, cookieDomain, version, actionName) {
+                    if (actionName === void 0) { actionName = 'unspecified'; }
                     this.eventId = eventId;
                     this.queueDomain = queueDomain;
                     this.cookieDomain = cookieDomain;
                     this.version = version;
+                    this.actionName = actionName;
                 }
                 CancelEventConfig.prototype.getString = function () {
                     return "EventId:" + this.eventId + "&Version:" + this.version +
-                        ("&QueueDomain:" + this.queueDomain + "&CookieDomain:" + this.cookieDomain);
+                        ("&QueueDomain:" + this.queueDomain + "&CookieDomain:" + this.cookieDomain + "&ActionName:" + this.actionName);
                 };
                 return CancelEventConfig;
             }());
             SDK.CancelEventConfig = CancelEventConfig;
             var RequestValidationResult = /** @class */ (function () {
-                function RequestValidationResult(actionType, eventId, queueId, redirectUrl, redirectType) {
+                function RequestValidationResult(actionType, eventId, queueId, redirectUrl, redirectType, actionName) {
                     this.actionType = actionType;
                     this.eventId = eventId;
                     this.queueId = queueId;
                     this.redirectUrl = redirectUrl;
                     this.redirectType = redirectType;
+                    this.actionName = actionName;
                 }
                 RequestValidationResult.prototype.doRedirect = function () {
                     return !!this.redirectUrl;
@@ -1263,8 +1292,11 @@ var QueueIT;
                 Utils.encodeUrl = function (url) {
                     if (!url)
                         return "";
-                    url = url.replace(/ /g, "+"); // Replace whitespace with +
-                    return encodeURIComponent(url);
+                    return encodeURIComponent(url).replace(/[!'()*]/g, function (c) {
+                        // More stringent in adhering to RFC 3986 (which reserves!, ', (, ), and *)
+                        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
+                        return '%' + c.charCodeAt(0).toString(16);
+                    });
                 };
                 Utils.decodeUrl = function (url) {
                     return decodeURIComponent(url);
@@ -1297,57 +1329,55 @@ var QueueIT;
                 function QueueParameterHelper() {
                 }
                 QueueParameterHelper.extractQueueParams = function (queueitToken) {
-                    try {
-                        if (!queueitToken) {
-                            return null;
-                        }
-                        var result = new QueueUrlParams();
-                        result.queueITToken = queueitToken;
-                        var paramList = result.queueITToken.split(QueueParameterHelper.KeyValueSeparatorGroupChar);
-                        for (var _i = 0, paramList_1 = paramList; _i < paramList_1.length; _i++) {
-                            var paramKeyValue = paramList_1[_i];
-                            var keyValueArr = paramKeyValue.split(QueueParameterHelper.KeyValueSeparatorChar);
-                            switch (keyValueArr[0]) {
-                                case QueueParameterHelper.TimeStampKey: {
-                                    result.timeStamp = parseInt(keyValueArr[1]);
-                                    if (!result.timeStamp) {
-                                        result.timeStamp = 0;
-                                    }
-                                    break;
-                                }
-                                case QueueParameterHelper.CookieValidityMinutesKey: {
-                                    result.cookieValidityMinutes = parseInt(keyValueArr[1]);
-                                    if (!result.cookieValidityMinutes) {
-                                        result.cookieValidityMinutes = null;
-                                    }
-                                    break;
-                                }
-                                case QueueParameterHelper.EventIdKey:
-                                    result.eventId = keyValueArr[1] || "";
-                                    break;
-                                case QueueParameterHelper.ExtendableCookieKey: {
-                                    var extendCookie = (keyValueArr[1] || "false").toLowerCase();
-                                    result.extendableCookie = extendCookie === "true";
-                                    break;
-                                }
-                                case QueueParameterHelper.HashKey:
-                                    result.hashCode = keyValueArr[1] || "";
-                                    break;
-                                case QueueParameterHelper.QueueIdKey:
-                                    result.queueId = keyValueArr[1] || "";
-                                    break;
-                                case QueueParameterHelper.RedirectTypeKey:
-                                    result.redirectType = keyValueArr[1] || "";
-                                    break;
-                            }
-                        }
-                        var hashWithPrefix = "" + QueueParameterHelper.KeyValueSeparatorGroupChar + QueueParameterHelper.HashKey + QueueParameterHelper.KeyValueSeparatorChar + result.hashCode;
-                        result.queueITTokenWithoutHash = result.queueITToken.replace(hashWithPrefix, "");
-                        return result;
-                    }
-                    catch (_a) {
+                    if (!queueitToken) {
                         return null;
                     }
+                    var result = new QueueUrlParams();
+                    result.queueITToken = queueitToken;
+                    var paramList = result.queueITToken.split(QueueParameterHelper.KeyValueSeparatorGroupChar);
+                    for (var _i = 0, paramList_1 = paramList; _i < paramList_1.length; _i++) {
+                        var paramKeyValue = paramList_1[_i];
+                        var keyValueArr = paramKeyValue.split(QueueParameterHelper.KeyValueSeparatorChar);
+                        if (keyValueArr.length !== 2) {
+                            continue;
+                        }
+                        switch (keyValueArr[0]) {
+                            case QueueParameterHelper.HashKey:
+                                result.hashCode = keyValueArr[1] || "";
+                                break;
+                            case QueueParameterHelper.TimeStampKey: {
+                                result.timeStamp = parseInt(keyValueArr[1]);
+                                if (!result.timeStamp) {
+                                    result.timeStamp = 0;
+                                }
+                                break;
+                            }
+                            case QueueParameterHelper.CookieValidityMinutesKey: {
+                                result.cookieValidityMinutes = parseInt(keyValueArr[1]);
+                                if (!result.cookieValidityMinutes) {
+                                    result.cookieValidityMinutes = null;
+                                }
+                                break;
+                            }
+                            case QueueParameterHelper.EventIdKey:
+                                result.eventId = keyValueArr[1] || "";
+                                break;
+                            case QueueParameterHelper.ExtendableCookieKey: {
+                                var extendCookie = (keyValueArr[1] || "false").toLowerCase();
+                                result.extendableCookie = extendCookie === "true";
+                                break;
+                            }
+                            case QueueParameterHelper.QueueIdKey:
+                                result.queueId = keyValueArr[1] || "";
+                                break;
+                            case QueueParameterHelper.RedirectTypeKey:
+                                result.redirectType = keyValueArr[1] || "";
+                                break;
+                        }
+                    }
+                    var hashWithPrefix = "" + QueueParameterHelper.KeyValueSeparatorGroupChar + QueueParameterHelper.HashKey + QueueParameterHelper.KeyValueSeparatorChar + result.hashCode;
+                    result.queueITTokenWithoutHash = result.queueITToken.replace(hashWithPrefix, "");
+                    return result;
                 };
                 QueueParameterHelper.TimeStampKey = "ts";
                 QueueParameterHelper.ExtendableCookieKey = "ce";
@@ -1392,6 +1422,47 @@ var QueueIT;
                 return CookieHelper;
             }());
             SDK.CookieHelper = CookieHelper;
+            var ConnectorDiagnostics = /** @class */ (function () {
+                function ConnectorDiagnostics() {
+                    this.isEnabled = false;
+                    this.hasError = false;
+                }
+                ConnectorDiagnostics.prototype.setStateWithTokenError = function (customerId, errorCode) {
+                    this.hasError = true;
+                    var redirectUrl = "https://" + customerId + ".api2.queue-it.net/" + customerId + "/diagnostics/connector/error/?code=" + errorCode;
+                    this.validationResult = new SDK.RequestValidationResult("ConnectorDiagnosticsRedirect", null, null, redirectUrl, null, null);
+                };
+                ConnectorDiagnostics.prototype.setStateWithSetupError = function () {
+                    this.hasError = true;
+                    this.validationResult = new SDK.RequestValidationResult("ConnectorDiagnosticsRedirect", null, null, "https://api2.queue-it.net/diagnostics/connector/error/?code=setup", null, null);
+                };
+                ConnectorDiagnostics.verify = function (customerId, secretKey, queueitToken) {
+                    var diagnostics = new ConnectorDiagnostics();
+                    var qParams = QueueParameterHelper.extractQueueParams(queueitToken);
+                    if (qParams == null)
+                        return diagnostics;
+                    if (qParams.redirectType == null)
+                        return diagnostics;
+                    if (qParams.redirectType !== "debug")
+                        return diagnostics;
+                    if (!(customerId && secretKey)) {
+                        diagnostics.setStateWithSetupError();
+                        return diagnostics;
+                    }
+                    if (Utils.generateSHA256Hash(secretKey, qParams.queueITTokenWithoutHash) != qParams.hashCode) {
+                        diagnostics.setStateWithTokenError(customerId, "hash");
+                        return diagnostics;
+                    }
+                    if (qParams.timeStamp < Utils.getCurrentTime()) {
+                        diagnostics.setStateWithTokenError(customerId, "timestamp");
+                        return diagnostics;
+                    }
+                    diagnostics.isEnabled = true;
+                    return diagnostics;
+                };
+                return ConnectorDiagnostics;
+            }());
+            SDK.ConnectorDiagnostics = ConnectorDiagnostics;
         })(SDK = KnownUserV3.SDK || (KnownUserV3.SDK = {}));
     })(KnownUserV3 = QueueIT.KnownUserV3 || (QueueIT.KnownUserV3 = {}));
 })(QueueIT || (QueueIT = {}));
@@ -1404,46 +1475,53 @@ var QueueIT;
             var UserInQueueService = /** @class */ (function () {
                 function UserInQueueService(userInQueueStateRepository) {
                     this.userInQueueStateRepository = userInQueueStateRepository;
-                    this.SDK_VERSION = "3.5.2";
                 }
-                UserInQueueService.prototype.getQueueITTokenValidationResult = function (targetUrl, eventId, config, queueParams, customerId, secretKey) {
+                UserInQueueService.prototype.getQueueITTokenValidationResult = function (targetUrl, config, queueParams, customerId, secretKey) {
                     var calculatedHash = SDK.Utils.generateSHA256Hash(secretKey, queueParams.queueITTokenWithoutHash);
                     if (calculatedHash !== queueParams.hashCode)
-                        return this.getVaidationErrorResult(customerId, targetUrl, config, queueParams, "hash");
-                    if (queueParams.eventId !== eventId)
-                        return this.getVaidationErrorResult(customerId, targetUrl, config, queueParams, "eventid");
+                        return this.cancelQueueCookieReturnErrorResult(customerId, targetUrl, config, queueParams, "hash");
+                    if (queueParams.eventId !== config.eventId)
+                        return this.cancelQueueCookieReturnErrorResult(customerId, targetUrl, config, queueParams, "eventid");
                     if (queueParams.timeStamp < SDK.Utils.getCurrentTime())
-                        return this.getVaidationErrorResult(customerId, targetUrl, config, queueParams, "timestamp");
+                        return this.cancelQueueCookieReturnErrorResult(customerId, targetUrl, config, queueParams, "timestamp");
                     this.userInQueueStateRepository.store(config.eventId, queueParams.queueId, queueParams.cookieValidityMinutes, config.cookieDomain, queueParams.redirectType, secretKey);
-                    return new SDK.RequestValidationResult(SDK.ActionTypes.QueueAction, config.eventId, queueParams.queueId, null, queueParams.redirectType);
+                    return new SDK.RequestValidationResult(SDK.ActionTypes.QueueAction, config.eventId, queueParams.queueId, null, queueParams.redirectType, config.actionName);
                 };
-                UserInQueueService.prototype.getVaidationErrorResult = function (customerId, targetUrl, config, qParams, errorCode) {
-                    var query = this.getQueryString(customerId, config.eventId, config.version, config.culture, config.layoutName) +
-                        ("&queueittoken=" + qParams.queueITToken + "&ts=" + SDK.Utils.getCurrentTime()) +
+                UserInQueueService.prototype.cancelQueueCookieReturnErrorResult = function (customerId, targetUrl, config, qParams, errorCode) {
+                    this.userInQueueStateRepository.cancelQueueCookie(config.eventId, config.cookieDomain);
+                    var query = this.getQueryString(customerId, config.eventId, config.version, config.culture, config.layoutName, config.actionName) +
+                        ("&queueittoken=" + qParams.queueITToken) +
+                        ("&ts=" + SDK.Utils.getCurrentTime()) +
                         (targetUrl ? "&t=" + SDK.Utils.encodeUrl(targetUrl) : "");
-                    var domainAlias = config.queueDomain;
-                    if (!SDK.Utils.endsWith(domainAlias, "/"))
-                        domainAlias = domainAlias + "/";
-                    var redirectUrl = "https://" + domainAlias + "error/" + errorCode + "/?" + query;
-                    return new SDK.RequestValidationResult(SDK.ActionTypes.QueueAction, config.eventId, null, redirectUrl, null);
+                    var uriPath = "error/" + errorCode + "/";
+                    var redirectUrl = this.generateRedirectUrl(config.queueDomain, uriPath, query);
+                    return new SDK.RequestValidationResult(SDK.ActionTypes.QueueAction, config.eventId, null, redirectUrl, null, config.actionName);
                 };
-                UserInQueueService.prototype.getInQueueRedirectResult = function (targetUrl, config, customerId) {
-                    var redirectUrl = "https://" + config.queueDomain + "/?" +
-                        this.getQueryString(customerId, config.eventId, config.version, config.culture, config.layoutName) +
+                UserInQueueService.prototype.cancelQueueCookieReturnQueueResult = function (targetUrl, config, customerId) {
+                    this.userInQueueStateRepository.cancelQueueCookie(config.eventId, config.cookieDomain);
+                    var query = this.getQueryString(customerId, config.eventId, config.version, config.culture, config.layoutName, config.actionName) +
                         (targetUrl ? "&t=" + SDK.Utils.encodeUrl(targetUrl) : "");
-                    return new SDK.RequestValidationResult(SDK.ActionTypes.QueueAction, config.eventId, null, redirectUrl, null);
+                    var redirectUrl = this.generateRedirectUrl(config.queueDomain, "", query);
+                    return new SDK.RequestValidationResult(SDK.ActionTypes.QueueAction, config.eventId, null, redirectUrl, null, config.actionName);
                 };
-                UserInQueueService.prototype.getQueryString = function (customerId, eventId, configVersion, culture, layoutName) {
+                UserInQueueService.prototype.getQueryString = function (customerId, eventId, configVersion, culture, layoutName, actionName) {
                     var queryStringList = new Array();
                     queryStringList.push("c=" + SDK.Utils.encodeUrl(customerId));
                     queryStringList.push("e=" + SDK.Utils.encodeUrl(eventId));
-                    queryStringList.push("ver=v3-javascript-" + this.SDK_VERSION);
+                    queryStringList.push("ver=" + UserInQueueService.SDK_VERSION);
                     queryStringList.push("cver=" + configVersion);
+                    queryStringList.push("man=" + SDK.Utils.encodeUrl(actionName));
                     if (culture)
                         queryStringList.push("cid=" + SDK.Utils.encodeUrl(culture));
                     if (layoutName)
                         queryStringList.push("l=" + SDK.Utils.encodeUrl(layoutName));
                     return queryStringList.join("&");
+                };
+                UserInQueueService.prototype.generateRedirectUrl = function (queueDomain, uriPath, query) {
+                    if (!SDK.Utils.endsWith(queueDomain, "/"))
+                        queueDomain = queueDomain + "/";
+                    var redirectUrl = "https://" + queueDomain + uriPath + "?" + query;
+                    return redirectUrl;
                 };
                 UserInQueueService.prototype.validateQueueRequest = function (targetUrl, queueitToken, config, customerId, secretKey) {
                     var state = this.userInQueueStateRepository.getState(config.eventId, config.cookieValidityMinute, secretKey, true);
@@ -1451,14 +1529,14 @@ var QueueIT;
                         if (state.isStateExtendable() && config.extendCookieValidity) {
                             this.userInQueueStateRepository.store(config.eventId, state.queueId, null, config.cookieDomain, state.redirectType, secretKey);
                         }
-                        return new SDK.RequestValidationResult(SDK.ActionTypes.QueueAction, config.eventId, state.queueId, null, state.redirectType);
+                        return new SDK.RequestValidationResult(SDK.ActionTypes.QueueAction, config.eventId, state.queueId, null, state.redirectType, config.actionName);
                     }
                     var queueParmas = SDK.QueueParameterHelper.extractQueueParams(queueitToken);
                     if (queueParmas !== null) {
-                        return this.getQueueITTokenValidationResult(targetUrl, config.eventId, config, queueParmas, customerId, secretKey);
+                        return this.getQueueITTokenValidationResult(targetUrl, config, queueParmas, customerId, secretKey);
                     }
                     else {
-                        return this.getInQueueRedirectResult(targetUrl, config, customerId);
+                        return this.cancelQueueCookieReturnQueueResult(targetUrl, config, customerId);
                     }
                 };
                 UserInQueueService.prototype.validateCancelRequest = function (targetUrl, config, customerId, secretKey) {
@@ -1466,24 +1544,23 @@ var QueueIT;
                     var state = this.userInQueueStateRepository.getState(config.eventId, -1, secretKey, false);
                     if (state.isValid) {
                         this.userInQueueStateRepository.cancelQueueCookie(config.eventId, config.cookieDomain);
-                        var query = this.getQueryString(customerId, config.eventId, config.version, null, null) +
+                        var query = this.getQueryString(customerId, config.eventId, config.version, null, null, config.actionName) +
                             (targetUrl ? "&r=" + SDK.Utils.encodeUrl(targetUrl) : "");
-                        var domainAlias = config.queueDomain;
-                        if (!SDK.Utils.endsWith(domainAlias, "/"))
-                            domainAlias = domainAlias + "/";
-                        var redirectUrl = "https://" + domainAlias + "cancel/" + customerId + "/" + config.eventId + "/?" + query;
-                        return new SDK.RequestValidationResult(SDK.ActionTypes.CancelAction, config.eventId, state.queueId, redirectUrl, state.redirectType);
+                        var uriPath = "cancel/" + customerId + "/" + config.eventId + "/";
+                        var redirectUrl = this.generateRedirectUrl(config.queueDomain, uriPath, query);
+                        return new SDK.RequestValidationResult(SDK.ActionTypes.CancelAction, config.eventId, state.queueId, redirectUrl, state.redirectType, config.actionName);
                     }
                     else {
-                        return new SDK.RequestValidationResult(SDK.ActionTypes.CancelAction, config.eventId, null, null, null);
+                        return new SDK.RequestValidationResult(SDK.ActionTypes.CancelAction, config.eventId, null, null, null, config.actionName);
                     }
                 };
                 UserInQueueService.prototype.extendQueueCookie = function (eventId, cookieValidityMinutes, cookieDomain, secretKey) {
                     this.userInQueueStateRepository.reissueQueueCookie(eventId, cookieValidityMinutes, cookieDomain, secretKey);
                 };
-                UserInQueueService.prototype.getIgnoreActionResult = function () {
-                    return new SDK.RequestValidationResult(SDK.ActionTypes.IgnoreAction, null, null, null, null);
+                UserInQueueService.prototype.getIgnoreResult = function (actionName) {
+                    return new SDK.RequestValidationResult(SDK.ActionTypes.IgnoreAction, null, null, null, null, actionName);
                 };
+                UserInQueueService.SDK_VERSION = "v3-javascript-" + "3.6.0";
                 return UserInQueueService;
             }());
             SDK.UserInQueueService = UserInQueueService;
@@ -1714,6 +1791,7 @@ var QueueIT;
                     };
                     return UrlValidatorHelper;
                 }());
+                IntegrationConfig.UrlValidatorHelper = UrlValidatorHelper;
                 var CookieValidatorHelper = /** @class */ (function () {
                     function CookieValidatorHelper() {
                     }
@@ -1728,6 +1806,7 @@ var QueueIT;
                     };
                     return CookieValidatorHelper;
                 }());
+                IntegrationConfig.CookieValidatorHelper = CookieValidatorHelper;
                 var UserAgentValidatorHelper = /** @class */ (function () {
                     function UserAgentValidatorHelper() {
                     }
@@ -1736,6 +1815,7 @@ var QueueIT;
                     };
                     return UserAgentValidatorHelper;
                 }());
+                IntegrationConfig.UserAgentValidatorHelper = UserAgentValidatorHelper;
                 var RequestBodyValidatorHelper = /** @class */ (function () {
                     function RequestBodyValidatorHelper() {
                     }
@@ -1744,6 +1824,7 @@ var QueueIT;
                     };
                     return RequestBodyValidatorHelper;
                 }());
+                IntegrationConfig.RequestBodyValidatorHelper = RequestBodyValidatorHelper;
                 var HttpHeaderValidatorHelper = /** @class */ (function () {
                     function HttpHeaderValidatorHelper() {
                     }
@@ -1774,7 +1855,7 @@ var QueueIT;
                         }
                     };
                     ComparisonOperatorHelper.contains = function (value, valueToCompare, isNegative, ignoreCase) {
-                        if (valueToCompare === "*")
+                        if (valueToCompare === "*" && value)
                             return true;
                         var evaluation = false;
                         if (ignoreCase)
@@ -1815,6 +1896,7 @@ var QueueIT;
                     };
                     return ComparisonOperatorHelper;
                 }());
+                IntegrationConfig.ComparisonOperatorHelper = ComparisonOperatorHelper;
             })(IntegrationConfig = SDK.IntegrationConfig || (SDK.IntegrationConfig = {}));
         })(SDK = KnownUserV3.SDK || (KnownUserV3.SDK = {}));
     })(KnownUserV3 = QueueIT.KnownUserV3 || (QueueIT.KnownUserV3 = {}));
@@ -1881,9 +1963,6 @@ var QueueIT;
                     ComparisonOperatorType.Contains = "Contains";
                     ComparisonOperatorType.EqualsAny = "EqualsAny";
                     ComparisonOperatorType.ContainsAny = "ContainsAny";
-                    ComparisonOperatorType.StartsWith = "StartsWith";
-                    ComparisonOperatorType.EndsWith = "EndsWith";
-                    ComparisonOperatorType.MatchesWith = "MatchesWith";
                     return ComparisonOperatorType;
                 }());
                 IntegrationConfig.ComparisonOperatorType = ComparisonOperatorType;
@@ -1908,7 +1987,7 @@ var QueueIT;
         })(SDK = KnownUserV3.SDK || (KnownUserV3.SDK = {}));
     })(KnownUserV3 = QueueIT.KnownUserV3 || (QueueIT.KnownUserV3 = {}));
 })(QueueIT || (QueueIT = {}));
-
 module = module || {};
 (exports = (module.exports = QueueIT));
+
 },{}]},{},[2]);
