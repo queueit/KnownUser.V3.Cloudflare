@@ -11,9 +11,11 @@ The most important fields of the `queueittoken` are:
 After the user is returned from the queue, the Worker script will let the user continue his request to your backend (without redirecting to the queue since the request has a valid queueittoken as querystring).
 
 ## Instruction
-*  Browse to Cloudflare dashboard -> Workers -> Workers KV and add a new KV, name it `IntegrationConfigKV`
-*  Browse to  Cloudflare dashboard -> Workers -> Launch Editor -> Add script and paste `queueitknownuser.bundle.js` 
-*  Go to the added script select the Resources tab -> KV Namespaces click Add Binding and for VARIABLE NAME enter `IntegrationConfigKV` and for NAMESPACE you should be able to select `IntegrationConfigKV` which you had added before
+*  Browse to Cloudflare dashboard -> Workers -> "Manage KV namespaces" and add a new namespace, name it `IntegrationConfigKV`
+*  Browse to  Cloudflare dashboard -> Workers -> "Manage Workers" -> "Create a Worker" -> clear template code and paste `queueitknownuser.bundle.js` 
+*  Rename worker to "Queue-it connector" (in upper left cover)
+*  Click Save and Deploy (uncheck "Will be deployed to your workers.dev subdomain" to get it deployed to production)
+*  On Worker setup find "KV Namespace Bindings" and Add variable. For VARIABLE NAME enter `IntegrationConfigKV` and for NAMESPACE you should be able to select `IntegrationConfigKV` which you had added before
 *  Add routes you need to be protected by Queue-it (e.g. https://PROTECTED.YOURDOMAIN.COM/*)
 *  Exclude routes that should not have Queue-it enabled (e.g. https://PROTECTED.YOURDOMAIN.COM/MEDIA/*) by selecting the "NONE" worker (read more about the route matching here: [Cloudflare matching-behavior](https://developers.cloudflare.com/workers/about/routes/#matching-behavior)
 *  Search for `QUEUEIT_CUSTOMERID` and `QUEUEIT_SECRETKEY` in `queueitknownuser.bundle.js` replace their values with your customerId and secretKey found in Go Queue-It self-service platform 
