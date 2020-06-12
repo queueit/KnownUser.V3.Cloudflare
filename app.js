@@ -45,7 +45,7 @@ addEventListener('fetch', event => {
       if (validationResult.doRedirect()) {
          response =  new Response();
         // Adding no cache headers to prevent browsers to cache requests
-        response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
         response.headers.set('Pragma', 'no-cache');
         response.headers.set('Expires', 'Fri, 01 Jan 1990 00:00:00 GMT');
   

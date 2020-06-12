@@ -18,8 +18,13 @@ exports.getHttpHandler = function(request, bodyString)
                 getCookieValue: function (cookieKey) {
                     if (!this.parsedCookieDic) {
                         this.parsedCookieDic = this.__parseCookies(this.getHeader('cookie'));
-                    }
-                    return decodeURIComponent(this.parsedCookieDic[cookieKey]);
+                    }                    
+                    var cookieValue = this.parsedCookieDic[cookieKey];
+                    
+                    if(cookieValue)
+                        return decodeURIComponent(cookieValue);
+                    
+                    return cookieValue;
                 },
                 getBodyAsString:function()
                 {
