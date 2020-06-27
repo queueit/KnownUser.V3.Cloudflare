@@ -24,7 +24,7 @@ After the user is returned from the queue, the Worker script will let the user c
 *  Add routes you need to be protected by Queue-it (e.g. https://PROTECTED.YOURDOMAIN.COM/*)
 *  Within the Go Queue-it Platform, set-up the Publish web endpoint (e.g. [PROTECTED ROUTE]/?__push_queueit_config) in Integration -> Overview -> Settings 
 *  Configure relevant Triggers and Actions in Go Queue-it
-*  When ready to deploy the configuration, click Integration -> Overview -> Show/Hide Instructions and click the Push Now button
+*  When ready to deploy the configuration, click Integration -> Overview -> Show/Hide Instructions and click the Publish Now button
 
 ### Protecting AJAX calls
 If you need to protect AJAX calls beside page loads you need to add the below JavaScript tags to your pages:
