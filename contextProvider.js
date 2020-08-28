@@ -26,8 +26,7 @@ exports.getHttpHandler = function(request, bodyString)
                     
                     return cookieValue;
                 },
-                getBodyAsString:function()
-                {
+                getRequestBodyAsString: function() {
                     return bodyString;
                 },
 				 __parseCookies:function(cookieValue) {
