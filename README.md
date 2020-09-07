@@ -39,6 +39,9 @@ If you need to protect AJAX calls beside page loads you need to add the below Ja
   src="//static.queue-it.net/script/queueconfigloader.min.js">
 </script>
 ```
+### Combining queueit code with other custom codes
+You can update app.js to execute your custom codes before or after calling queueit validation methods during request or response.
+After changing the code in app.js you need use browserify to regenerate the bundle and then use it in your cloudflare distribution. 
 
 >Please contact [queue-it support](https://support.queue-it.com/hc/en-us) for further information and instructions.
  
