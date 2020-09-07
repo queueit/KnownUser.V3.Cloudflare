@@ -1,7 +1,6 @@
 
-const QueueIT = require("./sdk/queueit-knownuserv3-sdk.js");
 const crypto = require('js-sha256');
-const CLOUDFLARE_SDK_VERSION = "1.1.2";
+const CLOUDFLARE_SDK_VERSION = require('./package.json').version;
 exports.getParameterByName = function( url, name) {
     if (!url) url = window.location.href;
     name = name.replace(/[\[\]]/g, '\\$&');
@@ -11,8 +10,8 @@ exports.getParameterByName = function( url, name) {
     if (!results[2]) return '';
     return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
-exports.configureKnownUserHashing= function() {
-    QueueIT.KnownUserV3.SDK.Utils.generateSHA256Hash = function (secretKey, stringToHash) {      
+exports.configureKnownUserHashing= function(Utils) {
+    Utils.generateSHA256Hash = function (secretKey, stringToHash) {      
         const hash = crypto.sha256.hmac(secretKey, stringToHash)
         return hash;
     };
