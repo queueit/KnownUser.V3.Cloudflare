@@ -28,7 +28,7 @@ After the user is returned from the queue, the Worker script will let the user c
 
 8. On the Worker setup page, select the toggle switch on "Deployed to `queue-itconnector.yoursite.workers.dev`" to deploy the Worker to production
 
-9. Select the "Settings" tab -> KV Namespace Bindings -> "Add variable". For "Variable name" enter `IntegrationConfigKV` and for "KV namespace" select `IntegrationConfigKV` which you had added before -> Save
+9. Select the "Settings" tab -> KV Namespace Bindings -> "Add variable". For "Variable name" enter "`IntegrationConfigKV`" and for "KV namespace" select "`IntegrationConfigKV`" which you had added before -> Save
 
 10. Navigate back to the Cloudflare Dashboard and select "Workers" -> "Add route"
 
