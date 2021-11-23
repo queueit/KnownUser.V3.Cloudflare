@@ -2060,7 +2060,8 @@ module.exports={
   "version": "1.2.1",
   "description": "KnownUserV3.Cloudflare",
   "repository": "https://github.com/queueit/KnownUser.V3.Cloudflare",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./index.d.ts",
   "author": {
     "name": "Queue-it"
   },

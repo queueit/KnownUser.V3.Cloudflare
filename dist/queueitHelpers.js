@@ -1,5 +1,5 @@
 const crypto = require('js-sha256');
-const CLOUDFLARE_SDK_VERSION = require('./package.json').version;
+const CLOUDFLARE_SDK_VERSION = "1.2.1";
 exports.getParameterByName = function (url, name) {
     if (!url)
         url = window.location.href;
