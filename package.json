@@ -1,13 +1,23 @@
 {
-  "name": "knownuser-v3-cloudflare",
-  "version": "1.2.0",
-  "description": "",
-  "main": "app.js",
-  "scripts": {},
-  "author": "",
+  "name": "@queue-it/cloudflare",
+  "version": "1.2.1",
+  "description": "KnownUserV3.Cloudflare",
+  "repository": "https://github.com/queueit/KnownUser.V3.Cloudflare",
+  "main": "index.js",
+  "author": {
+    "name": "Queue-it"
+  },
   "license": "MIT",
+  "scripts": {},
   "dependencies": {
     "js-sha256": "^0.9.0",
-    "queueit-knownuser": "^3.6.4"
+    "queueit-knownuser": "^3.7.4"
+  },
+  "devDependencies": {},
+  "nodemonConfig": {
+    "ignore": [
+      "app.bundle.js"
+    ],
+    "delay": 2500
   }
 }
