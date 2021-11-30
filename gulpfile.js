@@ -1,23 +1,32 @@
 const {src, dest, series} = require("gulp");
-const zip = require("gulp-zip");
+const tsify = require("tsify");
+
 const jsonModify = require('gulp-json-modify');
 const vinylSource = require('vinyl-source-stream');
 const browserify = require('browserify');
+const tar = require('gulp-tar');
+const gzip = require('gulp-gzip');
 
 function bundle(){
-    const browserifyTask = browserify();
-    browserifyTask.add("./app.js")
-
-    return browserifyTask.bundle()
-        .pipe(vinylSource('queueitknownuser.bundle.js'))
-        .pipe(dest('./dist'))
+	return browserify({
+            basedir: ".",
+            debug: false,
+            entries: ["app.ts"],
+            cache: {},
+            packageCache: {},
+        })
+            .plugin(tsify)
+            .bundle()
+            .pipe(vinylSource("queueitknownuser.bundle.js"))
+            .pipe(dest("./dist"));
 }
 
 function makePackage() {
     return src([
         './dist/queueitknownuser.bundle.js',
     ])
-        .pipe(zip('worker.zip'))
+        .pipe(tar('worker.tar'))
+        .pipe(gzip())
         .pipe(dest('./dist'));
 }
 

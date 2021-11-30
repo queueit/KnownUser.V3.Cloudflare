@@ -1,37 +1,39 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "target": "es6",
-    "lib": [
-      "es6"
+    "compilerOptions": {
+        "allowJs": true,
+        "module": "commonjs",
+        "target": "es6",
+        "lib": [
+            "es6"
+        ],
+        "typeRoots": [
+            "types",
+            "node_modules/@types"
+        ],
+        "outDir": "./dist",
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "noImplicitAny": true,
+        "noUnusedLocals": true,
+        "noImplicitThis": true,
+        "strictNullChecks": true,
+        "noImplicitReturns": true,
+        "preserveConstEnums": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "forceConsistentCasingInFileNames": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true
+    },
+    "ts-node": {
+        "files": true,
+        "transpileOnly": true
+    },
+    "include": [
+        "test/*",
+        "*.ts"
     ],
-    "moduleResolution": "node",
-    "outDir": "./dist",
-    "sourceMap": true,
-    "allowJs": true,
-    "noImplicitAny": true,
-    "noUnusedLocals": true,
-    "noImplicitThis": true,
-    "strictNullChecks": true,
-    "noImplicitReturns": true,
-    "preserveConstEnums": true,
-    "suppressImplicitAnyIndexErrors": true,
-    "forceConsistentCasingInFileNames": true,
-    "esModuleInterop": true,
-    "typeRoots": ["./node_modules/@types"]
-  },
-  "ts-node": {
-    "files": true
-  },
-  "include": [
-    "test/*",
-    "*.js"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "gulpfile.js",
-    "app.js",
-    "app.bundle.js"
-  ]
+    "exclude": [
+        "./gulpfile.js",
+        "node_modules"
+    ]
 }

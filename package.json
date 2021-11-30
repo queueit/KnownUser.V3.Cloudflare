@@ -1,6 +1,6 @@
 {
   "name": "@queue-it/cloudflare",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "KnownUserV3.Cloudflare",
   "repository": "https://github.com/queueit/KnownUser.V3.Cloudflare",
   "main": "./dist/index.js",
