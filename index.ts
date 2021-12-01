@@ -1,20 +1,15 @@
-let queueitCustomerId = "YOUR CUSTOMERID";
-let queueitSecretKey = "YOUR SECRET KEY";
-// Set to true, if you have any trigger(s) containing experimental 'RequestBody' condition.
-let queueitReadRequestBody: boolean = false;
+import QueueITRequestResponseHandler from "./requestResponseHandler";
 
-import {onQueueItRequest, onQueueItResponse} from "./requestResponseHandler";
+let handler: QueueITRequestResponseHandler | null;
 
 export function setIntegrationDetails(customerId: string, secretKey: string, readRequestBody: boolean = false) {
-    queueitCustomerId = customerId;
-    queueitSecretKey = secretKey;
-    queueitReadRequestBody = readRequestBody;
+    handler = new QueueITRequestResponseHandler(customerId, secretKey, readRequestBody);
 }
 
 export async function onClientRequest(request: any) {
-    return await onQueueItRequest(request, queueitCustomerId, queueitSecretKey, queueitReadRequestBody);
+    return handler?.onClientRequest(request);
 }
 
 export async function onClientResponse(response: any) {
-    return await onQueueItResponse(response);
+    return handler?.onClientResponse(response);
 }

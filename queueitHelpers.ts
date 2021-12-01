@@ -1,6 +1,6 @@
 import * as crypto from 'js-sha256';
 
-const CLOUDFLARE_SDK_VERSION = "1.2.2";
+const CLOUDFLARE_SDK_VERSION = "1.2.3";
 declare var window: any;
 
 export function getParameterByName(url: string, name: string) {

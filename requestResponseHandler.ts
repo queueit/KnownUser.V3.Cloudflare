@@ -4,112 +4,117 @@ const SHOULD_IGNORE_OPTIONS_REQUESTS = false;
 
 declare var IntegrationConfigKV: string;
 declare var Response: any;
-declare var Request: any;
 
 import {KnownUser, Utils} from 'queueit-knownuser'
 import CloudflareHttpContextProvider from './contextProvider'
 import {addKUPlatformVersion, configureKnownUserHashing, getParameterByName} from "./queueitHelpers";
 import {getIntegrationConfig, tryStoreIntegrationConfig} from "./integrationConfigProvider";
 
-let httpContextProvider: CloudflareHttpContextProvider | null;
-let sendNoCacheHeaders: boolean = false;
+export default class QueueITRequestResponseHandler {
+    private httpContextProvider: CloudflareHttpContextProvider | null;
+    private sendNoCacheHeaders: boolean = false;
 
-export async function onQueueItRequest(request: any, customerId: string, secretKey: string, readRequestBody?: boolean) {
-    if (isIgnored(request)) {
-        return null;
+    constructor(private customerId: string, private secretKey: string, private readRequestBody: boolean = false) {
     }
 
-    if (request.url.indexOf('__push_queueit_config') > 0) {
-        const result = await tryStoreIntegrationConfig(request, IntegrationConfigKV, secretKey);
-        return new Response(result ? "Success!" : "Fail!", result ? undefined : {status: 400});
-    }
-
-    try {
-        const integrationConfigJson = await getIntegrationConfig(IntegrationConfigKV) || "";
-
-        configureKnownUserHashing(Utils);
-
-        let bodyText = "";
-        if (readRequestBody) {
-            //reading maximum 2k characters of body to do the mathcing
-            bodyText = (await request.clone().text() || "").substring(0, 2048);
+    async onClientRequest(request: any) {
+        if (isIgnored(request)) {
+            return null;
         }
-        httpContextProvider = new CloudflareHttpContextProvider(request, bodyText);
 
-        const queueitToken = getQueueItToken(request, httpContextProvider);
-        const requestUrl = request.url;
-        const requestUrlWithoutToken = requestUrl.replace(new RegExp("([\?&])(" + KnownUser.QueueITTokenKey + "=[^&]*)", 'i'), "");
-        // The requestUrlWithoutToken is used to match Triggers and as the Target url (where to return the users to).
-        // It is therefor important that this is exactly the url of the users browsers. So, if your webserver is
-        // behind e.g. a load balancer that modifies the host name or port, reformat requestUrlWithoutToken before proceeding.
+        if (request.url.indexOf('__push_queueit_config') > 0) {
+            const result = await tryStoreIntegrationConfig(request, IntegrationConfigKV, this.secretKey);
+            return new Response(result ? "Success!" : "Fail!", result ? undefined : {status: 400});
+        }
 
+        try {
+            const integrationConfigJson = await getIntegrationConfig(IntegrationConfigKV) || "";
 
-        const validationResult = KnownUser.validateRequestByIntegrationConfig(
-            requestUrlWithoutToken, queueitToken, integrationConfigJson,
-            customerId, secretKey, httpContextProvider);
+            configureKnownUserHashing(Utils);
 
-        if (validationResult.doRedirect()) {
-            if (validationResult.isAjaxResult) {
-                const response = new Response();
-                const headerKey = validationResult.getAjaxQueueRedirectHeaderKey();
-                const queueRedirectUrl = validationResult.getAjaxRedirectUrl();
-
-                // In case of ajax call send the user to the queue by sending a custom queue-it header and redirecting user to queue from javascript
-                response.headers.set(headerKey, addKUPlatformVersion(queueRedirectUrl));
-                response.headers.set('Access-Control-Expose-Headers', headerKey)
-                sendNoCacheHeaders = true;
-                return response;
-            } else {
-                let responseResult = new Response(null, {status: 302});
-
-                // Send the user to the queue - either because hash was missing or because is was invalid
-                responseResult.headers.set('Location', addKUPlatformVersion(validationResult.redirectUrl));
-                sendNoCacheHeaders = true;
-                return responseResult
+            let bodyText = "";
+            if (this.readRequestBody) {
+                //reading maximum 2k characters of body to do the mathcing
+                bodyText = (await request.clone().text() || "").substring(0, 2048);
             }
-        } else {
-            // Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
-            if (requestUrl !== requestUrlWithoutToken && validationResult.actionType === 'Queue') {
-                let response = new Response(null, {status: 302});
-                response.headers.set('Location', requestUrlWithoutToken);
-                sendNoCacheHeaders = true;
-                return response;
+            this.httpContextProvider = new CloudflareHttpContextProvider(request, bodyText);
+
+            const queueitToken = getQueueItToken(request, this.httpContextProvider);
+            const requestUrl = request.url;
+            const requestUrlWithoutToken = requestUrl.replace(new RegExp("([\?&])(" + KnownUser.QueueITTokenKey + "=[^&]*)", 'i'), "");
+            // The requestUrlWithoutToken is used to match Triggers and as the Target url (where to return the users to).
+            // It is therefor important that this is exactly the url of the users browsers. So, if your webserver is
+            // behind e.g. a load balancer that modifies the host name or port, reformat requestUrlWithoutToken before proceeding.
+
+            const validationResult = KnownUser.validateRequestByIntegrationConfig(
+                requestUrlWithoutToken, queueitToken, integrationConfigJson,
+                this.customerId, this.secretKey, this.httpContextProvider);
+
+            if (validationResult.doRedirect()) {
+                if (validationResult.isAjaxResult) {
+                    const response = new Response();
+                    const headerKey = validationResult.getAjaxQueueRedirectHeaderKey();
+                    const queueRedirectUrl = validationResult.getAjaxRedirectUrl();
+
+                    // In case of ajax call send the user to the queue by sending a custom queue-it header and redirecting user to queue from javascript
+                    response.headers.set(headerKey, addKUPlatformVersion(queueRedirectUrl));
+                    response.headers.set('Access-Control-Expose-Headers', headerKey)
+                    this.sendNoCacheHeaders = true;
+                    return response;
+                } else {
+                    let responseResult = new Response(null, {status: 302});
+
+                    // Send the user to the queue - either because hash was missing or because is was invalid
+                    responseResult.headers.set('Location', addKUPlatformVersion(validationResult.redirectUrl));
+                    this.sendNoCacheHeaders = true;
+                    return responseResult
+                }
             } else {
-                // lets caller decides the next step
-                return null;
+                // Request can continue - we remove queueittoken form querystring parameter to avoid sharing of user specific token
+                if (requestUrl !== requestUrlWithoutToken && validationResult.actionType === 'Queue') {
+                    let response = new Response(null, {status: 302});
+                    response.headers.set('Location', requestUrlWithoutToken);
+                    this.sendNoCacheHeaders = true;
+                    return response;
+                } else {
+                    // lets caller decides the next step
+                    return null;
+                }
+            }
+
+        } catch (e) {
+            // There was an error validationg the request
+            // Use your own logging framework to log the Exception
+            if (console && console.log) {
+                console.log("ERROR:" + e);
+            }
+            this.httpContextProvider!.isError = true;
+            // lets caller decides the next step
+            return null;
+        }
+    }
+
+    async onClientResponse(response: any) {
+        let newResponse = new Response(response.body, response);
+        newResponse.headers.set(QUEUEIT_CONNECTOR_EXECUTED_HEADER_NAME, 'cloudflare');
+
+        if (this.httpContextProvider) {
+            const outputCookie = this.httpContextProvider.getOutputCookie();
+            if (outputCookie) {
+                newResponse.headers.append("Set-Cookie", outputCookie);
+            }
+            if (this.httpContextProvider.isError) {
+                newResponse.headers.append(QUEUEIT_FAILED_HEADERNAME, "true");
             }
         }
 
-    } catch (e) {
-        // There was an error validationg the request
-        // Use your own logging framework to log the Exception
-        if (console && console.log) {
-            console.log("ERROR:" + e);
+        if (this.sendNoCacheHeaders) {
+            addNoCacheHeaders(newResponse);
         }
-        httpContextProvider!.isError = true;
-        // lets caller decides the next step
-        return null;
-    }
-}
 
-export async function onQueueItResponse(response: any) {
-    let newResponse = new Response(response.body, response);
-    newResponse.headers.set(QUEUEIT_CONNECTOR_EXECUTED_HEADER_NAME, 'cloudflare');
-
-    if (httpContextProvider) {
-        if (httpContextProvider.outputCookie) {
-            newResponse.headers.append("Set-Cookie", httpContextProvider.outputCookie);
-        }
-        if (httpContextProvider.isError) {
-            newResponse.headers.append(QUEUEIT_FAILED_HEADERNAME, "true");
-        }
+        return newResponse;
     }
 
-    if (sendNoCacheHeaders) {
-        addNoCacheHeaders(newResponse);
-    }
-
-    return newResponse;
 }
 
 function isIgnored(request: any) {

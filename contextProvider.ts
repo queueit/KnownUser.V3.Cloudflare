@@ -6,7 +6,6 @@ export default class CloudflareHttpContextProvider implements IHttpContextProvid
     _outputCookie: string;
 
     isError: boolean;
-    outputCookie: string;
 
     constructor(public request: any, public bodyString: string) {
         this._httpRequest = new RequestProvider(this);

@@ -1,2 +1,3 @@
 *.zip
 dist/*.zip
+dist/*.tar.gz
