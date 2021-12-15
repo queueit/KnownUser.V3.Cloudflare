@@ -15,7 +15,7 @@ After the user is returned from the queue, the Worker script will let the user c
 1. Browse to Cloudflare dashboard -> select Workers -> "Manage KV namespaces" -> in the "Namespace Name" field, enter `IntegrationConfigKV` -> click "Add"
 2. In the upper-left side, select Workers -> "Create a Worker" -> clear the template code and paste the contents of `queueitknownuser.bundle.js` from the latest release.
 3. Search for `QUEUEIT_CUSTOMERID` and `QUEUEIT_SECRETKEY` in `queueitknownuser.bundle.js` replace their values with your customerId and secretKey found in the Go Queue-It self-service platform. 
-4. If you have any action(s) with trigger(s) using the experimental request body condition, then search for `READ_REQUEST_BODY` and set this variable to true.
+4. If you have any action(s) with trigger(s) using the request body condition, then search for `READ_REQUEST_BODY` and set this variable to true.
 5. Rename worker to "queue-itconnector" (located in the upper-left corner)
 6. Click Save and Deploy
 7. Go back to the Worker Setup page by clicking the "<" button next to the new title of the newly created Worker 
