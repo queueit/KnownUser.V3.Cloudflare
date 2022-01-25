@@ -1,28 +1,11 @@
 # KnownUser.V3.Cloudflare
+Before getting started please read the [documentation](https://github.com/queueit/Documentation/tree/main/edge-connectors) to get acquainted with edge connectors.
 
-[![npm version](https://badge.fury.io/js/@queue-it%2Fcloudflare.svg)](https://badge.fury.io/js/@queue-it%2Fcloudflare)
-
-The Queue-it Security Framework is used to ensure that end users cannot reach to your protected backend routes without
-passing the virtual queue by performing a server-side validation before processing a request. This approach is
-using [Cloudflare Workers](https://developers.cloudflare.com/workers/)
+This connector is using [Cloudflare Workers](https://developers.cloudflare.com/workers/)
 and [Cloudflare Workers KV](https://developers.cloudflare.com/workers/kv/) to integrate a Cloudflare protected WebServer
 with [Queue-it](https://queue-it.com/).
 
-## Introduction
-
-When a user makes a request to your backend Cloudflare will trigger queue-it Worker, the script validates the request
-and if it is needed, it will redirect the user to  the queue. After waiting in the queue, the queue engine will redirect
-the user back to your end attaching a query string parameter (`queueittoken`) containing some information about the user
-to the URL. The most important fields of the `queueittoken` are:
-
-- q - the users' unique queue identifier
-- ts - a timestamp of how long this redirect is valid
-- h - a hash of the token
-
-After the user is returned from the queue, the Worker script will let the user continue his request to your backend (
-without redirecting to the queue since the request has a valid queueittoken as querystring).
-
-## Instruction
+## Installation
 
 1. Browse to Cloudflare dashboard -> select Workers -> "Manage KV namespaces" -> in the "Namespace Name" field,
    enter `IntegrationConfigKV` -> click "Add"
@@ -56,7 +39,7 @@ without redirecting to the queue since the request has a valid queueittoken as q
 If you already have a worker and would like to integrate or chain the Queue-it connector in your code you need to follow these steps:
 1. Since you already have a worker, you only need to create the KV binding.
 You can do this by following step 1 in the instruction.
-2. Install the `@queue-it/cloudflare` npm package by running `npm i --save @queue-it/cloudflare` from within your worker's source directory.
+2. Install the `@queue-it/cloudflare` [![npm version](https://badge.fury.io/js/@queue-it%2Fcloudflare.svg)](https://badge.fury.io/js/@queue-it%2Fcloudflare) npm package by running `npm i --save @queue-it/cloudflare` from within your worker's source directory.
 3. Add this snippet in the file where you want to add the Queue-it connector.
 ```js
 import * as QueueIt from "@queue-it/cloudflare";
@@ -80,21 +63,6 @@ if (queueItResponse) {
 6. Make sure you return the `queueItResponse` variable from your worker if it has any value.
 7. You need to build your worker and deploy it
 8. Follow steps 9-15 from the instruction.
-
-### Protecting AJAX calls
-
-If you need to protect AJAX calls beside page loads you need to add the below JavaScript tags to your pages:
-
-```
-<script type="text/javascript" src="//static.queue-it.net/script/queueclient.min.js"></script>
-<script
- data-queueit-intercept-domain="{YOUR_CURRENT_DOMAIN}"
-   data-queueit-intercept="true"
-  data-queueit-c="{YOUR_CUSTOMER_ID}"
-  type="text/javascript"
-  src="//static.queue-it.net/script/queueconfigloader.min.js">
-</script>
-```
 
 ### Combining queueit code with other custom codes
 
