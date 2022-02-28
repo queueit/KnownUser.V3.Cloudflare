@@ -9,29 +9,31 @@ with [Queue-it](https://queue-it.com/).
 
 1. **Create a KV namespace**. From the  Cloudflare dashboard -> select "Workers" -> and press "Manage KV namespaces".  Press "Create namespace", in the "Namespace Name" field,
    enter `IntegrationConfigKV` and click "Add"
-2. **Create a new worker**. On the Workers panel press "Create a Service". Consider changing the service name to something meaningful. e.g. "queue-itconnector". Press "Create service" (the "starter" type doesn't matter as you will be replacing the code anyway). 
-3. **Add the worker code** Once the worker is created, press "Quick edit" and replace all the code in the left panel with the code from `queueitknownuser.bundle.js` (found in the repo above or in the latest release bundle)
-1. **Fill in your customer details** Search for `QUEUEIT_CUSTOMERID` and `QUEUEIT_SECRETKEY` in the worker code (from `queueitknownuser.bundle.js`) and replace their values with
+2. **Create a new worker**.
+   * On the Workers panel press "Create a Service". Consider changing the service name to something meaningful. e.g. "queue-itconnector". Press "Create service" (the "starter" type doesn't matter as you will be replacing the code anyway). 
+   * Once the worker is created, press "Quick edit" and replace all the code in the left panel with the code from `queueitknownuser.bundle.js` (found in the KnownUser.V3.Cloudflare repository or in the latest release bundle)
+   * Search for `QUEUEIT_CUSTOMERID` and `QUEUEIT_SECRETKEY` in the worker code (from `queueitknownuser.bundle.js`) and replace their values with
    your customerId and secretKey found in the Go Queue-It self-service platform.
    * If you have any action(s) with trigger(s) using the experimental request body condition, then search
    for `READ_REQUEST_BODY` and set this variable to true.
-1. **Click Save and Deploy**
-1. **Bind the KV namespace to the worker** Go back to the Worker Setup page by clicking the "<" button next to the new title of the newly created Worker. On the "Settings" tab, press the "Variables" menu item, and under "KV Namespace Bindings" click the "Add binding" button. For "Variable
+   * Click "Save and Deploy"
+3. **Bind the KV namespace to the worker** Go back to the Worker Setup page by clicking the "<" button next to the new title of the newly created Worker. On the "Settings" tab, press the "Variables" menu item, and under "KV Namespace Bindings" click the "Add binding" button. For "Variable
    name" enter "`IntegrationConfigKV`" and for "KV namespace" select "`IntegrationConfigKV`" from the dropdown which you
    had added before in Step 1. Click "Save".
-1. **Configure your publishing point and add routes** 
-   * Press the "Triggers" tab and copy the worker URL (e.g. queue-itconnector.[xxxxx].workers.dev) 
-   * Within the Go Queue-it Platform, go to Integration -> Overview -> Settings and paste the URL in "Publish web endpoint". Add https:// prefix and suffix ?__push_queueit_config to the URL so it reads e.g. https://queue-itconnector.[xxxxx].workers.dev/?__push_queueit_config 
-1. **Add routes** 
-* 
-* Exclude routes that should not have Queue-it enabled (e.g. https://PROTECTED.YOURDOMAIN.COM/MEDIA/*) by selecting
+4. **Configure your publishing point in Go**. 
+   * Within the Go Queue-it Platform, go to Integration -> Overview -> Settings and fill in the "Publish web endpoint" field.
+   * The value should be `https://[Worker URL]/?__push_queueit_config`. The worker URL can be copied from the Triggers tab in the Cloudflare worker settings (e.g. queue-itconnector.youraccount.workers.dev). This allows the Go platform to push your configuration to the Edgeworker and EdgeKV storage on Cloudflare
+
+5. **Add routes to the Cloudflare worker** 
+   * On the Triggers tab, configure the routes (URLs) that should be covered by the Edgeworker
+   * First, exclude routes that should not have Queue-it enabled, for instance all static resources (e.g. https://PROTECTED.YOURDOMAIN.COM/MEDIA/*) by selecting
     the "NONE" worker (read more about the route matching
     here: [Cloudflare matching-behavior](https://developers.cloudflare.com/workers/about/routes/#matching-behavior)
-1. Add routes you need to be protected by Queue-it (e.g. https://PROTECTED.YOURDOMAIN.COM/*)
-1. 
-1. Configure relevant Triggers and Actions in Go Queue-it
-1. When ready to deploy the configuration, click Integration -> Overview -> Show/Hide Instructions and click the
-    Publish Now button
+   * Then, add routes you need to be protected by Queue-it (e.g. https://PROTECTED.YOURDOMAIN.COM/*) and assign them to the Queue-it worker. 
+
+6. **Configure Triggers and Actions and publish your configuration**
+   * Create the appropriate Triggers and Actions in the Integration section of Go. Note: for simple URL-based Ignore actions, consider using a NONE route in Cloudflare instead, to incur fewer EdgeWorker invocations (lower cost). 
+   * Go to Integration -> Overview and click the "Publish Now" button - the page will prompt you whether you also want to publish to the web endpoint, which you should accept - success/failure of the publish will be indicated in as status message at the bottom of the screen. 
 
 ### Using the NPM package
 
