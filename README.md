@@ -11,7 +11,7 @@ with [Queue-it](https://queue-it.com/).
    enter `IntegrationConfigKV` and click "Add"
 2. **Create a new worker**:
    * On the Workers panel press "Create a Service". Consider changing the service name to something meaningful. e.g. `queue-itconnector`. Press "Create service" (the "starter" type doesn't matter as you will be replacing the code anyway.) 
-   * Once the worker is created, press "Quick edit" and replace all the code in the left panel with the code from `queueitknownuser.bundle.js` (found in the KnownUser.V3.Cloudflare repository or in the latest release bundle)
+   * Once the worker is created, press "Quick edit" and replace all the code in the left panel with the code from `queueitknownuser.bundle.js` (file can found in the assets for [latest release](https://github.com/queueit/KnownUser.V3.Cloudflare/releases))
    * Search for `QUEUEIT_CUSTOMERID` and `QUEUEIT_SECRETKEY` in the worker code (from `queueitknownuser.bundle.js`) and replace their values with
    your customerId and secretKey found in the Go Queue-It self-service platform.
    * If you have any action(s) with trigger(s) using the experimental request body condition, then search
