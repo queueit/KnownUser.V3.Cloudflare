@@ -1,6 +1,7 @@
 'use strict'
-const QUEUEIT_CUSTOMERID = "YOUR CUSTOMERID";
-const QUEUEIT_SECRETKEY = "YOUR SECRET KEY";
+const QUEUEIT_CUSTOMERID = "genies";
+const QUEUEIT_SECRETKEY = "secret";
+
 // Set to true, if you have any trigger(s) containing experimental 'RequestBody' condition.
 const READ_REQUEST_BODY = false;
 import QueueITRequestResponseHandler from "./requestResponseHandler";

@@ -1,6 +1,6 @@
 const QUEUEIT_FAILED_HEADERNAME = "x-queueit-failed";
 const QUEUEIT_CONNECTOR_EXECUTED_HEADER_NAME = 'x-queueit-connector';
-const SHOULD_IGNORE_OPTIONS_REQUESTS = false;
+const SHOULD_IGNORE_OPTIONS_REQUESTS = true;
 
 declare var IntegrationConfigKV: string;
 declare var Response: any;
@@ -28,7 +28,16 @@ export default class QueueITRequestResponseHandler {
         }
 
         try {
-            const integrationConfigJson = await getIntegrationConfig(IntegrationConfigKV) || "";
+            
+            const getConfigForEventId = (eventId: any, modifiedConfig: any) => {
+                if (eventId === modifiedConfig.Integrations[0].EventId) return modifiedConfig;
+                const newConfig = modifiedConfig;
+                newConfig.Integrations.forEach((integration: any) => {
+                  integration.EventId = eventId;
+                });
+                return newConfig;
+            };
+              
 
             configureKnownUserHashing(Utils);
 
@@ -42,13 +51,26 @@ export default class QueueITRequestResponseHandler {
             const queueitToken = getQueueItToken(request, this.httpContextProvider);
             const requestUrl = request.url;
             const requestUrlWithoutToken = requestUrl.replace(new RegExp("([\?&])(" + KnownUser.QueueITTokenKey + "=[^&]*)", 'i'), "");
+
+            const waitingRoomId = queueitToken
+                ?.match(/e_([a-zA-Z0-9-_]+)/)[0]
+                ?.substring(2);
+
+            const integrationConfigJson = await getIntegrationConfig(IntegrationConfigKV) || "";
+
+            const configJson = JSON.stringify(getConfigForEventId(waitingRoomId, JSON.parse(integrationConfigJson)));
             // The requestUrlWithoutToken is used to match Triggers and as the Target url (where to return the users to).
             // It is therefor important that this is exactly the url of the users browsers. So, if your webserver is
             // behind e.g. a load balancer that modifies the host name or port, reformat requestUrlWithoutToken before proceeding.
 
             const validationResult = KnownUser.validateRequestByIntegrationConfig(
-                requestUrlWithoutToken, queueitToken, integrationConfigJson,
-                this.customerId, this.secretKey, this.httpContextProvider);
+                requestUrlWithoutToken,
+                queueitToken,
+                configJson,
+                this.customerId,
+                this.secretKey,
+                this.httpContextProvider
+            );
 
             if (validationResult.doRedirect()) {
                 if (validationResult.isAjaxResult) {
@@ -112,6 +134,7 @@ export default class QueueITRequestResponseHandler {
             addNoCacheHeaders(newResponse);
         }
 
+        addCorsHeaders(newResponse);
         return newResponse;
     }
 
@@ -119,6 +142,13 @@ export default class QueueITRequestResponseHandler {
 
 function isIgnored(request: any) {
     return SHOULD_IGNORE_OPTIONS_REQUESTS && request.method === 'OPTIONS';
+}
+
+function addCorsHeaders(response: any) {
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'POST,OPTIONS');
+    response.headers.set('Access-Control-Allow-Credentials', true);
+    response.headers.set('Access-Control-Allow-Headers', '*');
 }
 
 function addNoCacheHeaders(response: any) {
