@@ -50,6 +50,14 @@ export default class QueueITRequestResponseHandler {
 
             const queueitToken = getQueueItToken(request, this.httpContextProvider);
             const requestUrl = request.url;
+
+            if (!queueitToken && requestUrl.includes("reserveNFT")) {
+                let responseResult = new Response(null, { status: 302 });
+                responseResult.headers.set('Location', 'null');
+                this.sendNoCacheHeaders = true;
+                return responseResult;
+            }
+
             const requestUrlWithoutToken = requestUrl.replace(new RegExp("([\?&])(" + KnownUser.QueueITTokenKey + "=[^&]*)", 'i'), "");
 
             const waitingRoomId = queueitToken
@@ -110,6 +118,15 @@ export default class QueueITRequestResponseHandler {
             if (console && console.log) {
                 console.log("ERROR:" + e);
             }
+
+            if (request.url.includes("reserveNFT")) {
+                let responseResult = new Response(null, { status: 302 });
+                responseResult.headers.set('Location', 'null');
+                this.sendNoCacheHeaders = true;
+                return responseResult;
+            }
+
+            console.log("returning null");
             this.httpContextProvider!.isError = true;
             // lets caller decides the next step
             return null;

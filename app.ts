@@ -15,7 +15,14 @@ addEventListener('fetch', (event: any) => {
 
 const handleRequest = async function (event: any) {
   const {request} = event;
-  const handler = new QueueITRequestResponseHandler(QUEUEIT_CUSTOMERID, QUEUEIT_SECRETKEY, READ_REQUEST_BODY)
+  const handler = new QueueITRequestResponseHandler(QUEUEIT_CUSTOMERID, QUEUEIT_SECRETKEY, READ_REQUEST_BODY);
+
+  // exit early for other apis
+  if (!request.url.includes("reserveNFT")) {
+    const response = await fetch(request);
+    return await handler.onClientResponse(response);
+  }
+
   let queueitResponse = await handler.onClientRequest(request);
   if (queueitResponse) {
     //it is a redirect- break the flow
