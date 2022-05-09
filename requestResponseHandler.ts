@@ -28,7 +28,7 @@ export default class QueueITRequestResponseHandler {
         }
 
         try {
-            
+
             const getConfigForEventId = (eventId: any, modifiedConfig: any) => {
                 if (eventId === modifiedConfig.Integrations[0].EventId) return modifiedConfig;
                 const newConfig = modifiedConfig;
@@ -51,11 +51,10 @@ export default class QueueITRequestResponseHandler {
             const queueitToken = getQueueItToken(request, this.httpContextProvider);
             const requestUrl = request.url;
 
+            const integrationConfigJson = await getIntegrationConfig(IntegrationConfigKV) || "";
+
             if (!queueitToken && requestUrl.includes("reserveNFT")) {
-                let responseResult = new Response(null, { status: 302 });
-                responseResult.headers.set('Location', 'null');
-                this.sendNoCacheHeaders = true;
-                return responseResult;
+                return this.redirectNull();
             }
 
             const requestUrlWithoutToken = requestUrl.replace(new RegExp("([\?&])(" + KnownUser.QueueITTokenKey + "=[^&]*)", 'i'), "");
@@ -64,7 +63,6 @@ export default class QueueITRequestResponseHandler {
                 ?.match(/e_([a-zA-Z0-9-_]+)/)[0]
                 ?.substring(2);
 
-            const integrationConfigJson = await getIntegrationConfig(IntegrationConfigKV) || "";
 
             const configJson = JSON.stringify(getConfigForEventId(waitingRoomId, JSON.parse(integrationConfigJson)));
             // The requestUrlWithoutToken is used to match Triggers and as the Target url (where to return the users to).
@@ -116,14 +114,11 @@ export default class QueueITRequestResponseHandler {
             // There was an error validationg the request
             // Use your own logging framework to log the Exception
             if (console && console.log) {
-                console.log("ERROR:" + e);
+                console.log("ERROR:" + JSON.stringify(e));
             }
 
             if (request.url.includes("reserveNFT")) {
-                let responseResult = new Response(null, { status: 302 });
-                responseResult.headers.set('Location', 'null');
-                this.sendNoCacheHeaders = true;
-                return responseResult;
+                return this.redirectNull();
             }
 
             console.log("returning null");
@@ -155,6 +150,14 @@ export default class QueueITRequestResponseHandler {
         return newResponse;
     }
 
+    async redirectNull() {
+        let responseResult = new Response(null, { status: 302 });
+        responseResult.headers.set('Location', 'null');
+        this.sendNoCacheHeaders = true;
+        addNoCacheHeaders(responseResult);
+        return responseResult;
+    }
+
 }
 
 function isIgnored(request: any) {
@@ -184,3 +187,4 @@ function getQueueItToken(request: any, httpContext: CloudflareHttpContextProvide
     const tokenHeaderName = `x-${KnownUser.QueueITTokenKey}`;
     return httpContext.getHttpRequest().getHeader(tokenHeaderName);
 }
+

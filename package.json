@@ -24,7 +24,9 @@
     "typescript": "^4.6.3",
     "vinyl-source-stream": "^2.0.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/node": "^17.0.31"
+  },
   "nodemonConfig": {
     "ignore": [
       "app.bundle.js"
