@@ -78,6 +78,11 @@ export default class QueueITRequestResponseHandler {
                 this.httpContextProvider
             );
 
+            // allow validation if timestamp is within the hour
+            if (checkEndpoint(validationResult.redirectUrl, queueitToken)) {
+                return null;
+            }
+
             if (validationResult.doRedirect()) {
                 if (validationResult.isAjaxResult) {
                     const response = new Response();
@@ -186,5 +191,58 @@ function getQueueItToken(request: any, httpContext: CloudflareHttpContextProvide
 
     const tokenHeaderName = `x-${KnownUser.QueueITTokenKey}`;
     return httpContext.getHttpRequest().getHeader(tokenHeaderName);
+}
+
+function checkEndpoint(url: string, queueitToken: string): boolean {
+    const TIMESTAMP_ERROR_URL = 'https://inline.genies.com/error/timestamp/';
+
+    try {
+        const splitUrl = url.split('?');
+        const base = splitUrl[0];
+        const paramsArray = splitUrl[1].split('&');
+
+        // parse query params key and value
+        const paramsMap = paramsArray.reduce((acc: any, param) => {
+            const keyValue = param.split('=');
+            const key = keyValue[0];
+            const value = keyValue[1];
+            return {...acc, [key]: value}
+        }) as any;
+        
+
+        // parse ts from token
+        const tokenTs = queueitToken.match(/(ts_\d+)/);
+        if (!tokenTs) {
+            return false;
+        }
+        const ts = tokenTs[0].split('_')[1];
+    
+        // timestamp error and we have the same queueitToken from the request 
+        // and if it has been less than 1 hour from expiration
+        if (
+            base === TIMESTAMP_ERROR_URL && 
+            paramsMap[KnownUser.QueueITTokenKey] === queueitToken &&
+            lessThanOneHourAgo(parseInt(ts))
+        ) {
+            
+            return true;
+        }
+    } catch (e) {
+        console.log("caught error checking endpoint ", e);
+    }
+    return false;
+}
+
+/**
+ * check if the given date is within one hour
+ * @param date epoch number of time to check
+ * @returns true if it has been less than one hour, 
+ * false if it is over one hour
+ */
+function lessThanOneHourAgo(date: number): boolean {
+    const HOUR = 1000 * 60 * 60;
+    const oneHourAgo = Math.floor(Date.now() / 1000) - HOUR;
+
+    return date > oneHourAgo;
 }
 
