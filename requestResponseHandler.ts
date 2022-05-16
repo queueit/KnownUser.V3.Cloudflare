@@ -1,6 +1,7 @@
 const QUEUEIT_FAILED_HEADERNAME = "x-queueit-failed";
 const QUEUEIT_CONNECTOR_EXECUTED_HEADER_NAME = 'x-queueit-connector';
 const SHOULD_IGNORE_OPTIONS_REQUESTS = true;
+const ID_TOKEN_HEADER_NAME = 'id-token';
 
 declare var IntegrationConfigKV: string;
 declare var Response: any;
@@ -9,6 +10,8 @@ import {KnownUser, Utils} from 'queueit-knownuser'
 import CloudflareHttpContextProvider from './contextProvider'
 import {addKUPlatformVersion, configureKnownUserHashing, getParameterByName} from "./queueitHelpers";
 import {getIntegrationConfig, tryStoreIntegrationConfig} from "./integrationConfigProvider";
+import jwt from 'next-auth/jwt';
+import getFlagsForUser, { getVariationValueForFlag } from "./getFlagsForUser";
 
 export default class QueueITRequestResponseHandler {
     private httpContextProvider: CloudflareHttpContextProvider | null;
@@ -48,8 +51,38 @@ export default class QueueITRequestResponseHandler {
             }
             this.httpContextProvider = new CloudflareHttpContextProvider(request, bodyText);
 
+            let decodedIdToken;
+
             const queueitToken = getQueueItToken(request, this.httpContextProvider);
+            const idToken = getIdToken(request, this.httpContextProvider);
             const requestUrl = request.url;
+
+            if (idToken) {
+                decodedIdToken = jwt.decode({token: idToken, secret: AUTH_SECRET });
+
+                const flags = await getFlagsForUser({
+                    key: decodedIdToken["sub"],
+                    email: decodedIdToken["email"],
+                    phoneNumber: decodedIdToken["phone_number"],
+                    ip: request?.ip,
+                });
+
+                const editionQueueEnabledVariationValue = await getVariationValueForFlag({
+                    flag: 'isEditionQueueEnabled',
+                    key: decodedIdToken["sub"],
+                    email: decodedIdToken["email"],
+                    phoneNumber: decodedIdToken["phone_number"],
+                    ip: request?.ip,
+                });
+
+                const variationValue = JSON.parse(editionQueueEnabledVariationValue);
+                const editionFlowId = request.payload.variables.input.editionFlowId;
+                const isEditionIncluded = variationValue.includes(editionFlowId);
+
+                if (!(flags.isQueueActive && isEditionIncluded)) {
+                    return this.redirectNull();
+                }
+            }
 
             const integrationConfigJson = await getIntegrationConfig(IntegrationConfigKV) || "";
 
@@ -246,3 +279,13 @@ function lessThanOneHourAgo(date: number): boolean {
     return date > oneHourAgo;
 }
 
+function getIdToken(request: any, httpContext: CloudflareHttpContextProvider) {
+    let idToken = getParameterByName(request.ur, ID_TOKEN_HEADER_NAME);
+
+    if (idToken) {
+        return idToken;
+    }
+
+    const tokenHeaderName = `x-${ID_TOKEN_HEADER_NAME}`;
+    return httpContext.getHttpRequest().getHeader(tokenHeaderName);
+}

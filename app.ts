@@ -1,9 +1,12 @@
 'use strict'
 
 declare global {
+  const LAUNCH_DARKLY_API_KEY: string
   const QUEUE_IT_SECRET_KEY: string
   const BYPASS_STAGING: string
   const BYPASS_PROD: string
+  const JWT_SIGNING_PRIVATE_KEY: string
+  const AUTH_SECRET: string;
 }
 
 const QUEUEIT_CUSTOMERID = "genies";
@@ -33,6 +36,7 @@ const handleRequest = async function (event: any) {
     return await handler.onClientResponse(response);
   }
 
+
   let queueitResponse = await handler.onClientRequest(request);
   if (queueitResponse) {
     //it is a redirect- break the flow
@@ -42,5 +46,4 @@ const handleRequest = async function (event: any) {
     const response = await fetch(request);
     return await handler.onClientResponse(response);
   }
-
 }
