@@ -63,8 +63,7 @@ if (queueItResponse) {
 }
 ```
 6. Make sure you return the `queueItResponse` variable from your worker if it has any value.
-7. You need to build your worker and deploy it
-8. Follow steps 9-15 from the instruction.
+7. You need to build your worker and deploy it.
 
 ### Combining queueit code with other custom codes
 
