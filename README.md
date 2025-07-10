@@ -1,4 +1,7 @@
 # KnownUser.V3.Cloudflare
+
+**This is not the most recent version. In order to obtain access to the most recent version, please contact your local Queue-it representative or Queue-it Support**
+
 Before getting started please read the [documentation](https://github.com/queueit/Documentation/tree/main/edge-connectors) to get acquainted with edge connectors.
 
 This connector is using [Cloudflare Workers](https://developers.cloudflare.com/workers/)
